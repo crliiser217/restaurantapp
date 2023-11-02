@@ -1,0 +1,39 @@
+// app global css in SCSS form
+.bg-grad {
+  background: linear-gradient(110.1deg, rgb(50, 177, 50) 2.9%, rgb(168, 251, 60) 90.3%);
+}
+
+.icon-style {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.w-full {
+  @media (max-width: 639px) {
+    width: 100%;
+  }
+}
+
+.mobile-toolbar {
+  @media (max-width: 639px) {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 0;
+  }
+}
+
+.mobile-padding {
+  @media (max-width: 639px) {
+    padding: 10px
+  };
+}
+
+.title {
+  @media (min-width: 639px) {
+    padding-right: 150px !important;
+  }
+  @media (max-width: 639px) {
+    padding-bottom: 10px !important;
+  }
+}
