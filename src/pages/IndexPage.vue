@@ -1,33 +1,34 @@
 <template>
   <q-page class="flex flex-center" style="padding: 100px 0;">
-    <div class="grid-container">
-      <DishCard v-for="dish in dishesList"
+    <div class="grid-container" v-if="wsStore.messages.dishes_list">
+      <DishCard v-for="dish in wsStore.messages.dishes_list.dishes_list"
                       :card="dish" 
                       :key="dish.dish_name"
                       @edit-cost="editCost.open(dish)"
                       @show-desc="descPopup.open(dish)"/>
     </div>
-    <EditCost ref="editCost" />
-    <DescPopup ref="descPopup" />
     <q-inner-loading
-        :showing="!dishesList"
+        v-else
+        showing
         label="Пожалуйста подождите..."
         label-class="text-teal"
         label-style="font-size: 1.1em"
       />
+    <EditCost ref="editCost" />
+    <DescPopup ref="descPopup" />
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import DishCard from 'src/components/DishCard.vue'
-import { useMenuStore } from 'src/stores/menu-store'
 import EditCost from 'src/components/EditCost.vue'
 import DescPopup from 'src/components/DescPopup.vue'
+import { useWsStore } from 'src/stores/useWsStore'
 
-const menuStore = useMenuStore()
+const wsStore = useWsStore()
 
-const dishesList = computed(() => menuStore.menu)
+onMounted(() => wsStore.sendMessage({operation: "dishes_list",}))
 
 const editCost = ref(null)
 const descPopup = ref(null)

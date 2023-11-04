@@ -1,30 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useMenuStore } from './menu-store'
-import { useGuestStore } from './guest-store'
 
 export const useWsStore = defineStore('ws', () => {
-  const menuStore = useMenuStore()
-  const guestStore = useGuestStore()
   const ws = new WebSocket('ws:178.250.156.182:8080/fortest')
   const queue = ref([])
-
-  ws.onopen = () => {
-    menuStore.getMenu()
-    setTimeout(() => guestStore.getGuests(), 300)
-   
-  }
+  const messages = ref({})
 
   ws.onmessage = function(event) {
-    let dataList = JSON.parse(event.data)
-    if (dataList.dishes_list) {
-      menuStore.menu = dataList.dishes_list
-    } else if(dataList.guest_list) {
-      guestStore.guests = dataList.guest_list
-    }
+    let message = JSON.parse(event.data)
+    messages.value[message.operation] = message
   }
 
   function sendMessage(message) {
+    message.key = "wSEYY3tA9BpRNhkwfOmS"
     if(ws.readyState !== 1) {
       queue.value.push(message)
       return
@@ -39,6 +27,7 @@ export const useWsStore = defineStore('ws', () => {
 
   return {
     sendMessage,
+    messages,
   }
   
 })

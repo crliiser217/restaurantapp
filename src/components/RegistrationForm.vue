@@ -1,49 +1,113 @@
 <template>
-  <q-form @submit="onSubmit" class="column" style="gap: 10px;">
-    <q-input outlined v-model="forename" name="forename" :dense="true" placeholder="Имя" :rules="[isEmptyRule]" lazy-rules/>
-    <q-input outlined v-model="surname" name="surname" :dense="true" placeholder="Фамилия" :rules="[isEmptyRule]" lazy-rules/>
-    <q-input outlined v-model="middlename" name="middlename" :dense="true" placeholder="Отчество" :rules="[isEmptyRule]" lazy-rules/>
-    <q-input outlined v-model="phone" name="phone" :dense="true" placeholder="Номер телефона" 
-            :rules="[isEmptyRule, isPhoneRule]" mask="+# (###) ### - ## - ##" lazy-rules/>
-    <q-input outlined v-model="email" name="email" :dense="true" placeholder="E-mail" :rules="[isEmptyRule, isEmailRule]"  lazy-rules/>
-    <q-input outlined v-model="birthday" name="birthday" :dense="true" placeholder="Дата рождения" 
-            :rules="[isEmptyRule, isBirthdayRule]" mask="##.##.####" lazy-rules/>
-    <q-input outlined v-model="address" name="address" :dense="true" placeholder="Адрес" :rules="[isEmptyRule]" lazy-rules/> 
-    <!-- <q-input name="male" /> -->
-    <q-btn type="submit" class="bg-green-5" text-color="white" label="Сохранить" style="border-radius: 16px;"/>
+  <q-form @submit="onSubmit" class="column" ref="registrationForm" style="gap: 10px;">
+    <q-input v-for="field in registrationFields" outlined :dense="true" lazy-rules v-model="field.model"
+      :label="field.label" :rules="field.rules" :mask="field.mask" :key="field.name" :name="field.name" />
+    <q-btn type="submit" class="bg-green-5" text-color="white" label="Сохранить" style="border-radius: 16px;"
+      :loading="loader" />
   </q-form>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useGuestStore } from 'src/stores/guest-store'
+import { ref, watch } from 'vue'
+import { useWsStore } from 'src/stores/useWsStore';
+import { Notify } from 'quasar';
 
-const guestStore = useGuestStore()
+const wsStore = useWsStore()
+const registrationForm = ref(null)
+const loader = ref(false)
 
-const forename = ref(null)
-const surname = ref(null)
-const middlename = ref(null)
-const phone = ref(null)
-const email = ref(null)
-const birthday = ref(null)
-const address = ref(null)
-
-function onSubmit(evt) {
-  const formData = new FormData(evt.target)
+function onSubmit() {
+  loader.value = true
   const data = {}
-  for (const [name, value] of formData.entries()) {
-    data[name] = value
+  for (let field in registrationFields.value) {
+    data[field] = registrationFields.value[field].model
   }
-  guestStore.guestRegistration(data)
+  data.operation = "guest_regestration"
+  wsStore.sendMessage(data)
 }
 
-const isEmptyRule = value => !!value || 'Поле обязательно для заполнения'
-const isEmailRule = value => value.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
-    || 'Введите корректный email'
-const isPhoneRule = value => value.length === 22 || 'Введите корректный номер'
-const currentYear = (new Date).getFullYear()
-const isBirthdayRule = value => value.length === 10 && (currentYear - +value.slice(6)) > 1 && (currentYear - +value.slice(6)) < 100
-      && +value.slice(0, 2) < 32 && +value.slice(3, 5) < 13 || 'Введите корректную дату'
-</script>
+watch(() => wsStore.messages.guest_regestration,
+  () => {
+    if (wsStore.messages.guest_regestration.status) {
+      wsStore.sendMessage({
+        operation: "guests_list",
+      })
+      loader.value = false
+      resetForm()
+      Notify.create({
+        message: 'Гость успешно зарегистрирован',
+        color: 'green',
+      })
+    } else {
+      Notify.create({
+        message: 'Произошла ошибка',
+        color: 'red'
+      })
+    }
+  }
+)
 
+function resetForm() {
+  for (let field in registrationFields.value) {
+    registrationFields.value[field].model = ''
+  }
+  registrationForm.value.resetValidation()
+}
+
+const registrationFields = ref({
+  forename: {
+    name: 'forename',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения',],
+    label: 'Имя',
+    mask: '',
+  },
+  surname: {
+    name: 'surname',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения',],
+    label: 'Фамилия',
+    mask: '',
+  },
+  middlename: {
+    name: 'middlename',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения',],
+    label: 'Отчество',
+    mask: '',
+  },
+  phone: {
+    name: 'phone',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения', value => value.length === 22 || 'Введите корректный номер'],
+    label: 'Номер телефона',
+    mask: '+# (###) ### - ## - ##',
+  },
+  email: {
+    name: 'email',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения', value =>
+      value.match(/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+      || 'Введите корректный email'],
+    label: 'E-mail',
+    mask: '',
+  },
+  birthday: {
+    name: 'birthday',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения', value => value.length === 10 &&
+      ((new Date).getFullYear() - +value.slice(6)) > 1 && ((new Date).getFullYear() - +value.slice(6)) < 100
+      && +value.slice(0, 2) < 32 && +value.slice(3, 5) < 13 || 'Введите корректную дату'],
+    label: 'Дата рождения',
+    mask: '##.##.####',
+  },
+  address: {
+    name: 'address',
+    model: '',
+    rules: [value => !!value || 'Поле обязательно для заполнения'],
+    label: 'Адрес',
+    mask: '',
+  },
+})
+</script>
 <style scoped lang="scss"></style>

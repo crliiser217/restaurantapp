@@ -1,8 +1,7 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
-import { useGuestStore } from 'src/stores/guest-store'
-import { useMenuStore } from 'src/stores/menu-store'
+
 
 /*
  * If not building with SSR mode, you can

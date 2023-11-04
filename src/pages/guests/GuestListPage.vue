@@ -1,33 +1,37 @@
 <template>
   <q-page class="column flex-center" style="padding: 100px 0;">
-    <div class="table-container" v-if="!!guestList.length">
+    <div class="table-container" v-if="wsStore.messages.guests_list">
       <div class="text-h3 table-header">Таблица гостей</div>
       <div class="grid-container" >
-        <GuestCell v-for="guest in guestList" :guest="guest" :key="guest.id" @add-phone="addPhone.open(guest)"
+        <GuestCell v-for="guest in wsStore.messages.guests_list.guest_list" :guest="guest" :key="guest.id" @add-phone="addPhone.open(guest)"
                     @add-email="addEmail.open(guest)"/>
-        <div v-for="n in guestList.length % 3 + 1" style="background-color: white;" :key="n"></div>
+        <div v-for="n in wsStore.messages.guests_list.guest_list.length % 3 + 1" style="background-color: white;" :key="n"></div>
       </div>
     </div>
-    <AddPhone ref="addPhone" />
-    <AddEmail ref="addEmail" />
     <q-inner-loading
-        :showing="!guestList.length"
+        v-else
+        showing
         label="Пожалуйста подождите..."
         label-class="text-teal"
         label-style="font-size: 1.1em"
       />
+    <AddPhone ref="addPhone" />
+    <AddEmail ref="addEmail" />
+    
   </q-page>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useGuestStore } from 'src/stores/guest-store'
+import { ref, onMounted } from 'vue'
+import { useWsStore } from 'src/stores/useWsStore'
 import GuestCell from 'src/components/GuestCell.vue'
 import AddPhone from 'src/components/AddPhone.vue'
 import AddEmail from 'src/components/AddEmail.vue'
 
-const guestStore = useGuestStore()
-const guestList = computed(() => guestStore.guests)
+const wsStore = useWsStore()
+onMounted(() => wsStore.sendMessage({
+  operation: "guests_list",
+}))
 
 const addPhone = ref(null)
 const addEmail = ref(null)

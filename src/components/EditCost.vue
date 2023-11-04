@@ -11,7 +11,7 @@
       <q-card-section>
         <q-form @submit="onSubmit" class="column">
           <q-input name="cost-input" :rules="costRules" outlined v-model="dish.dish_cost" :dense="true" />
-          <q-btn class="bg-green-5 self-center" text-color="white" type="submit" label="Сохранить"/>
+          <q-btn class="bg-green-5 self-center" text-color="white" type="submit" label="Сохранить" :loading="loader"/>
         </q-form>
       </q-card-section>
     </q-card>
@@ -19,30 +19,49 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useMenuStore } from 'stores/menu-store'
+import { ref, watch } from 'vue'
+import { useWsStore } from 'src/stores/useWsStore'
+import { Notify } from 'quasar';
 
-const menuStore = useMenuStore()
-const dish = ref({})
+const wsStore = useWsStore()
+const dish = ref({
+  dish_cost: '',
+})
 
 const showEditCost = ref(false)
+const loader = ref(false)
 
 const costRules = [value => !!value || 'Поле обязательно для заполнения',
 value => !!(+value) || 'Поле должно быть числом',
 value => +value > 0 || 'Число должно быть положительным']
 
-function onSubmit(evt) {
-  const formData = new FormData(evt.target)
-  const data = []
-  for (const [name, value] of formData.entries()) {
-    data.push({
-      name,
-      value
-    })
-  }
-  menuStore.changeDishCost(dish.value.dish_id, data[0].value)
-  showEditCost.value = false
+function onSubmit() {
+  loader.value = true
+  wsStore.sendMessage({
+    operation: "change_dish_cost",
+    id: dish.value.dish_id,
+    cost_value: +dish.value.dish_cost
+  })
 }
+
+watch(() => wsStore.messages.change_dish_cost,
+  () => {
+    if (wsStore.messages.change_dish_cost.status) {
+      let index = wsStore.messages.dishes_list.dishes_list.findIndex((el) => el.dish_id === dish.value.dish_id)
+      wsStore.messages.dishes_list.dishes_list[index].dish_cost = +dish.value.dish_cost
+      loader.value = false
+      showEditCost.value = false
+      Notify.create({
+        message: 'Цена успешно изменена',
+        color: 'green',
+      })
+    } else {
+      Notify.create({
+        message: 'Произошла ошибка',
+        color: 'red',
+      })
+    }
+  })
 
 const open = (newDish) => {
   Object.assign(dish.value, newDish)
@@ -55,6 +74,4 @@ defineExpose({
 })
 </script>
 
-<style scoped lang="scss">
-
-</style>
+<style scoped lang="scss"></style>
